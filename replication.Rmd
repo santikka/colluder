@@ -1,7 +1,8 @@
 ---
-title: 'Full Law Identification under Missing Data in the Categorical Colluder Model:
-  Replication Materials'
-output: pdf_document
+title: 'Full Law Identification under Missing Data in the Categorical Colluder Model: Replication Materials'
+output: 
+  pdf_document:
+    extra_dependencies: "booktabs"
 ---
 
 ```{r setup, include=FALSE}
@@ -12,13 +13,13 @@ nn <- c(1000, 10000, 100000)
 ```
 
 ```{r functions}
-create_colluder_logl <- function(xclasses = 2, yclasses = 2, prefix = "p_", 
-                                 nprefix = "", replacex0 = TRUE, 
-                                 replacey0 = TRUE, output = "function", 
+create_colluder_logl <- function(xclasses = 2, yclasses = 2, prefix = "p_",
+                                 nprefix = "", replacex0 = TRUE,
+                                 replacey0 = TRUE, output = "function",
                                  oneparam = NULL) {
   vxclasses <- seq(0, xclasses - 1)
   vyclasses <- seq(0, yclasses - 1)
-  cases <- expand.grid(x = c(vxclasses,"m"), y = c(vyclasses, "m"))  
+  cases <- expand.grid(x = c(vxclasses, "m"), y = c(vyclasses, "m"))
   xylevels <- paste(cases$x, cases$y, sep = "_")
   nxylevels <- paste0(nprefix, paste("n", cases$x, cases$y, sep = "_"))
   ftext <- ""
@@ -27,28 +28,29 @@ create_colluder_logl <- function(xclasses = 2, yclasses = 2, prefix = "p_",
     if (cases$x[j] != "m") { # X observed
       ftext <- paste0(ftext, " + ", nxylevels[j], " * log(", prefix, "rx", ")")
       ftext <- paste0(
-        ftext, " + ", nxylevels[j], " * log(", prefix, "x_", cases$x[j],  ")"
-      ) 
+        ftext, " + ", nxylevels[j], " * log(", prefix, "x_", cases$x[j], ")"
+      )
       parameters <- c(
         parameters, paste0(prefix, "rx"), paste0(prefix, "x_", cases$x[j])
       )
       if (cases$y[j] != "m") { # X and Y observed
         ftext <- paste0(
-          ftext," + ", nxylevels[j], " * log(", prefix, "ry_", cases$x[j], "_1",   ")"
+          ftext, " + ", nxylevels[j], " * log(", 
+          prefix, "ry_", cases$x[j], "_1", ")"
         )
         ftext <- paste0(
-          ftext," + ", nxylevels[j], " * log(", prefix, 
+          ftext, " + ", nxylevels[j], " * log(", prefix,
           "y_", cases$x[j], "_", cases$y[j], ")"
         )
         parameters <- c(
-          parameters, 
-          paste0(prefix, "ry_", cases$x[j], "_1"), 
+          parameters,
+          paste0(prefix, "ry_", cases$x[j], "_1"),
           paste0(prefix, "y_", cases$x[j], "_", cases$y[j])
         )
       } else { # X observed, Y missing
         ftext <- paste0(
-          ftext," + ", nxylevels[j], " * log( 1 - ", prefix, 
-          "ry_", cases$x[j], "_1",   ")"
+          ftext, " + ", nxylevels[j], " * log( 1 - ", prefix,
+          "ry_", cases$x[j], "_1", ")"
         )
         # integrating over missing Y results in 1.
         parameters <- c(parameters, paste0(prefix, "ry_", cases$x[j], "_1"))
@@ -56,33 +58,33 @@ create_colluder_logl <- function(xclasses = 2, yclasses = 2, prefix = "p_",
     } else { # X missing
       if (cases$y[j] != "m") { # X missing, Y observed
         ftext <- paste0(
-          ftext," + ", nxylevels[j], " * log( 1 - ", prefix, "rx", ")"
-        )
-        parameters <- c(parameters, paste0(prefix, "rx"))
-        ftext <- paste0(ftext," + ", nxylevels[j], " * log( ")
-        for (k in 1:length(vxclasses)) {
-          ftext <- paste0(
-            ftext," + ", prefix, "x_", vxclasses[k], " * ", 
-            prefix, "y_", vxclasses[k], "_", cases$y[j], " * ", 
-            prefix, "ry_", vxclasses[k], "_0"
-          )
-          parameters <- c(
-            parameters, paste0(prefix, "x_", vxclasses[k]), 
-            paste0(prefix, "y_", vxclasses[k], "_", cases$y[j]), 
-            paste0(prefix, "ry_", vxclasses[k], "_0")
-          )
-        }
-        ftext <- paste0(ftext,")")
-      } else { # X and Y missing
-        ftext <- paste0(
           ftext, " + ", nxylevels[j], " * log( 1 - ", prefix, "rx", ")"
-        )  
+        )
         parameters <- c(parameters, paste0(prefix, "rx"))
         ftext <- paste0(ftext, " + ", nxylevels[j], " * log( ")
         for (k in 1:length(vxclasses)) {
           ftext <- paste0(
-            ftext," + ", prefix, "x_", vxclasses[k], " * ", 
-            "(1 - ", prefix, "ry_", vxclasses[k], "_0",")"
+            ftext, " + ", prefix, "x_", vxclasses[k], " * ",
+            prefix, "y_", vxclasses[k], "_", cases$y[j], " * ",
+            prefix, "ry_", vxclasses[k], "_0"
+          )
+          parameters <- c(
+            parameters, paste0(prefix, "x_", vxclasses[k]),
+            paste0(prefix, "y_", vxclasses[k], "_", cases$y[j]),
+            paste0(prefix, "ry_", vxclasses[k], "_0")
+          )
+        }
+        ftext <- paste0(ftext, ")")
+      } else { # X and Y missing
+        ftext <- paste0(
+          ftext, " + ", nxylevels[j], " * log( 1 - ", prefix, "rx", ")"
+        )
+        parameters <- c(parameters, paste0(prefix, "rx"))
+        ftext <- paste0(ftext, " + ", nxylevels[j], " * log( ")
+        for (k in 1:length(vxclasses)) {
+          ftext <- paste0(
+            ftext, " + ", prefix, "x_", vxclasses[k], " * ",
+            "(1 - ", prefix, "ry_", vxclasses[k], "_0", ")"
           )
           # integrating over missing Y results in 1.
           parameters <- c(
@@ -90,7 +92,7 @@ create_colluder_logl <- function(xclasses = 2, yclasses = 2, prefix = "p_",
             paste0(prefix, "ry_", vxclasses[k], "_0")
           )
         }
-        ftext <- paste0(ftext,")")
+        ftext <- paste0(ftext, ")")
       }
     }
   }
@@ -98,15 +100,15 @@ create_colluder_logl <- function(xclasses = 2, yclasses = 2, prefix = "p_",
     pattern <- paste0(prefix, "x_0")
     replacement <- "(1"
     for (k in 2:xclasses) {
-      replacement <- paste0(replacement," - ",prefix,"x_",vxclasses[k])
+      replacement <- paste0(replacement, " - ", prefix, "x_", vxclasses[k])
     }
     replacement <- paste0(replacement, " )")
-    ftext <- gsub(pattern, replacement, ftext, fixed = TRUE)      
+    ftext <- gsub(pattern, replacement, ftext, fixed = TRUE)
     parameters <- setdiff(parameters, pattern)
   }
   if (replacey0) {
     for (k in 1:xclasses) {
-      pattern <- paste0(prefix, "y_",vxclasses[k], "_0")
+      pattern <- paste0(prefix, "y_", vxclasses[k], "_0")
       replacement <- "(1"
       for (h in 2:yclasses) {
         replacement <- paste0(
@@ -114,21 +116,24 @@ create_colluder_logl <- function(xclasses = 2, yclasses = 2, prefix = "p_",
         )
       }
       replacement <- paste0(replacement, " )")
-      ftext <- gsub(pattern, replacement, ftext, fixed = TRUE)  
+      ftext <- gsub(pattern, replacement, ftext, fixed = TRUE)
       parameters <- setdiff(parameters, pattern)
     }
   }
-  if (output == "text") return(ftext)
-  parameters <- unique(parameters) #duplicate parameter names are removed
+  if (output == "text") {
+    return(ftext)
+  }
+  parameters <- unique(parameters) # duplicate parameter names are removed
   if (!is.null(oneparam)) parameters <- oneparam
   if (output == "list") {
     return(list(parameters = parameters, ftext = ftext, nnames = nxylevels))
   }
   if (output == "function") {
     functionalltext <- paste0(
-      "function(",  paste(parameters, collapse = ","),
-      ") { ", ftext," }"
-    ) # Deriv does not work with explicit return
+      "function(", paste(parameters, collapse = ","),
+      ") { ", ftext, " }"
+    ) 
+    # Deriv does not work with explicit return
     return(eval(parse(text = functionalltext)))
   }
   stop("The output type should be 'text', 'list' or 'function'.")
@@ -138,15 +143,28 @@ create_colluder_logl_grad <- function(logl) {
   return(Deriv::Deriv(logl))
 }
 
-vectorize_logl <- function(loglfunction, paramnames, prefix = "p_") { # works also for gradient 
+vectorize_logl <- function(loglfunction, paramnames, prefix = "p_") { 
+  # works also for gradient
   vlogl <- function(param, nvec) {
-    if (any(!is.finite(param))) return(NA)
-    if (min(param) < 0 | max(param) > 1) return(NA)
-    sum_p_x <- sum(param[substr(names(param), 1, 1 + nchar(prefix)) == paste0(prefix, "x")]) 
-    if (sum_p_x >= 1) return(NA)
+    if (any(!is.finite(param))) {
+      return(NA)
+    }
+    if (min(param) < 0 | max(param) > 1) {
+      return(NA)
+    }
+    sum_p_x <- sum(
+      param[substr(names(param), 1, 1 + nchar(prefix)) == paste0(prefix, "x")]
+    )
+    if (sum_p_x >= 1) {
+      return(NA)
+    }
     for (k in 0:9) { # assuming max 10 classes
-      sum_p_y <- sum(param[substr(names(param), 1, 3 + nchar(prefix)) == paste0(prefix, "y_", k)])
-      if (sum_p_y >= 1) return(NA)
+      sum_p_y <- sum(
+        param[substr(names(param), 1, 3 + nchar(prefix)) == paste0(prefix, "y_", k)]
+      )
+      if (sum_p_y >= 1) {
+        return(NA)
+      }
     }
     paramlist <- vector("list", length(paramnames))
     names(paramlist) <- paramnames
@@ -162,31 +180,44 @@ vectorize_logl <- function(loglfunction, paramnames, prefix = "p_") { # works al
   return(vlogl)
 }
 
-vectorize_grad <- function(gradfunction, paramnames, prefix = "p_") { # works also for gradient 
+vectorize_grad <- function(gradfunction, paramnames, prefix = "p_") { 
+  # works also for gradient
   vlogl <- function(param, nvec) {
-    if (any(!is.finite(param))) return(rep(NA, length(param)))
-    if (min(param) < 0 | max(param) > 1) return(rep(NA, length(param)))
-    sum_p_x <- sum(param[substr(names(param), 1, 1 + nchar(prefix)) == paste0(prefix, "x")]) 
-    if (sum_p_x >= 1) return(rep(NA, length(param)))
+    if (any(!is.finite(param))) {
+      return(rep(NA, length(param)))
+    }
+    if (min(param) < 0 | max(param) > 1) {
+      return(rep(NA, length(param)))
+    }
+    sum_p_x <- sum(
+      param[substr(names(param), 1, 1 + nchar(prefix)) == paste0(prefix, "x")]
+    )
+    if (sum_p_x >= 1) {
+      return(rep(NA, length(param)))
+    }
     for (k in 0:9) { # assuming max 10 classes
-      sum_p_y <- sum(param[substr(names(param), 1, 3 + nchar(prefix)) == paste0(prefix, "y_", k)])
-      if (sum_p_y >= 1) return(rep(NA, length(param)))
+      sum_p_y <- sum(
+        param[substr(names(param), 1, 3 + nchar(prefix)) == paste0(prefix, "y_", k)]
+      )
+      if (sum_p_y >= 1) {
+        return(rep(NA, length(param)))
+      }
     }
     paramlist <- vector("list", length(paramnames))
     names(paramlist) <- paramnames
     for (j in 1:length(param)) {
       paramlist[[j]] <- param[j]
     }
-    for(k in 1:length(nvec)) {
+    for (k in 1:length(nvec)) {
       assign(names(nvec)[k], nvec[k], envir = knitr::knit_global())
     }
     logl <- do.call(gradfunction, paramlist)
-    return(-logl)     
+    return(-logl)
   }
   return(vlogl)
 }
 
-create_colluder_model <- function(xclasses = 2, yclasses = 2, prefix = "p_", 
+create_colluder_model <- function(xclasses = 2, yclasses = 2, prefix = "p_",
                                   minrunif = 0.1, maxrunif = 0.9, rx_prob1 = NULL,
                                   ryminrunif = 0.7, rymaxrunif = 0.9, yxdiag = NULL,
                                   myseed = NULL) {
@@ -196,10 +227,25 @@ create_colluder_model <- function(xclasses = 2, yclasses = 2, prefix = "p_",
   if (is.null(rx_prob1)) rx_prob1 <- runif(1, minrunif, maxrunif)
   rx_prob0 <- 1 - rx_prob1
   rx_prob <- c(rx_prob0, rx_prob1)
-  y_x_prob <- matrix(runif(xclasses * yclasses, minrunif, maxrunif), nrow = xclasses, ncol = yclasses)
+  y_x_prob <- matrix(
+    runif(
+      xclasses * yclasses, 
+      minrunif, maxrunif
+    ), 
+    nrow = xclasses, 
+    ncol = yclasses
+  )
   if (!is.null(yxdiag)) y_x_prob <- y_x_prob + diag(rep(yxdiag, yclasses))
   y_x_prob <- y_x_prob / cbind(rowSums(y_x_prob)) %*% rbind(rep(1, yclasses))
-  ry_x_rx_prob1 <- matrix(runif(xclasses, ryminrunif, rymaxrunif), nrow = xclasses, ncol = 2) 
+  ry_x_rx_prob1 <- matrix(
+    runif(
+      xclasses, 
+      ryminrunif, 
+      rymaxrunif
+    ), 
+    nrow = xclasses, 
+    ncol = 2
+  )
   ry_x_rx_prob0 <- 1 - ry_x_rx_prob1
   flist <- create_colluder_logl(xclasses, yclasses, output = "list")
   parameters <- rep(NA, length(flist$parameters))
@@ -212,20 +258,28 @@ create_colluder_model <- function(xclasses = 2, yclasses = 2, prefix = "p_",
   }
   for (k in 1:xclasses) {
     for (h in 2:yclasses) {
-      parameters[paste0(prefix, "y_", vxclasses[k], "_", vyclasses[h])] <- y_x_prob[k,h]
+      parameters[paste0(prefix, "y_", vxclasses[k], "_", vyclasses[h])] <- y_x_prob[k, h]
     }
   }
   for (k in 1:xclasses) {
-    parameters[paste0(prefix, "ry_", vxclasses[k], "_1")] <- ry_x_rx_prob1[k,2]
-    parameters[paste0(prefix, "ry_", vxclasses[k], "_0")] <- ry_x_rx_prob1[k,1]
+    parameters[paste0(prefix, "ry_", vxclasses[k], "_1")] <- ry_x_rx_prob1[k, 2]
+    parameters[paste0(prefix, "ry_", vxclasses[k], "_0")] <- ry_x_rx_prob1[k, 1]
   }
   scm <- R6causal::SCM$new(
     "colluder",
     uflist = list(
-      ux = function(n) {return(runif(n))},
-      uy = function(n) {return(runif(n))},
-      urx = function(n) {return(runif(n))},
-      ury = function(n) {return(runif(n))}
+      ux = function(n) {
+        return(runif(n))
+      },
+      uy = function(n) {
+        return(runif(n))
+      },
+      urx = function(n) {
+        return(runif(n))
+      },
+      ury = function(n) {
+        return(runif(n))
+      }
     ),
     vflist = list(
       x = function(ux) {
@@ -255,15 +309,17 @@ create_colluder_model <- function(xclasses = 2, yclasses = 2, prefix = "p_",
       }
     ),
     rflist = list(
-      x = function(urx) { as.numeric(urx < rx_prob1) },
+      x = function(urx) {
+        as.numeric(urx < rx_prob1)
+      },
       y = function(ury, r_x, x) {
         return(
           R6causal::generate_condprob(
             ycondx = data.table(
-              r_y = rep(c(0, 1), each = xclasses*2),
+              r_y = rep(c(0, 1), each = xclasses * 2),
               r_x = rep(c(0, 1), each = xclasses, times = 2),
               x = rep(vxclasses, times = 4),
-              prob = c( as.vector(ry_x_rx_prob0), as.vector(ry_x_rx_prob1))
+              prob = c(as.vector(ry_x_rx_prob0), as.vector(ry_x_rx_prob1))
             ),
             x = data.table(x = x, r_x = r_x, ury = ury),
             Umerge_expr = "ury"
@@ -285,7 +341,7 @@ create_nvec <- function(simdata_obs) {
   return(nvec)
 }
 
-create_iniparam <- function(simdata_obs, xclasses = 2, 
+create_iniparam <- function(simdata_obs, xclasses = 2,
                             yclasses = 2, prefix = "p_") {
   flist <- create_colluder_logl(xclasses, yclasses, output = "list")
   parameters <- rep(NA, length(flist$parameters))
@@ -310,7 +366,7 @@ create_iniparam <- function(simdata_obs, xclasses = 2,
   y_x_probdt[, prob := nyx / nx]
   for (k in 1:xclasses) {
     for (h in 2:yclasses) {
-      iniprob <- y_x_probdt[x_md == vxclasses[k] & y_md == vyclasses[h],]$prob
+      iniprob <- y_x_probdt[x_md == vxclasses[k] & y_md == vyclasses[h], ]$prob
       if (length(iniprob) != 0) {
         parameters[paste0(prefix, "y_", vxclasses[k], "_", vyclasses[h])] <- iniprob
       } else {
@@ -323,18 +379,22 @@ create_iniparam <- function(simdata_obs, xclasses = 2,
     parameters[paste0(prefix, "ry_", vxclasses[k], "_1")] <- ry_prob1
     parameters[paste0(prefix, "ry_", vxclasses[k], "_0")] <- ry_prob1
   }
-  return(parameters) 
+  return(parameters)
 }
 
 form <- function(number) {
-  formatC(number, digits = 2, format = "f")   
+  formatC(number, digits = 3, format = "f")
 }
 
 estci <- function(par) {
   text <- paste0(
-    form(adjestim[par])," (", form(lower[par]), ", ", form(upper[par]), ")"
+    form(adjestim[par]), " (", form(lower[par]), ", ", form(upper[par]), ")"
   )
   return(text)
+}
+
+phantom <- function(number) {
+  ifelse(sign(number) < 0, "", "\\hphantom{-}")
 }
 ```
 
@@ -350,23 +410,23 @@ vgrad <- vectorize_logl(grad, paramnames = logllist$parameters)
 nparam <- length(logllist$parameters)
 
 results <- data.table(
-  round = rep(1:rounds, each = length(nn) * nparam), 
+  round = rep(1:rounds, each = length(nn) * nparam),
   n = rep(nn, each = nparam, times = rounds),
-  param = NA, 
-  estim = NA, 
+  param = NA,
+  estim = NA,
   truevalue = NA
 )
 
 for (i in 1:rounds) {
-  for(j in 1:length(nn)) {
+  for (j in 1:length(nn)) {
     ccm <- create_colluder_model(m, q, rx_prob1 = 0.8, yxdiag = 2)
     n <- nn[j]
     ccm$colluderscm$simulate(n)
     nvec <- create_nvec(ccm$colluderscm$simdata_obs)
     iniparam <- create_iniparam(ccm$colluderscm$simdata_obs, xclasses = m, yclasses = q)
     estim <- optim(iniparam, vlogl, gr = vgrad, method = "BFGS", nvec = nvec)
-    indices <- (1 + (i - 1) * length(nn) * nparam + (j - 1) * nparam):((i - 1) * length(nn) * nparam + j * nparam)  
-    results$param[indices] <- names(ccm$trueparameters) 
+    indices <- (1 + (i - 1) * length(nn) * nparam + (j - 1) * nparam):((i - 1) * length(nn) * nparam + j * nparam)
+    results$param[indices] <- names(ccm$trueparameters)
     results$estim[indices] <- estim$par
     results$truevalue[indices] <- ccm$trueparameters
   }
@@ -387,10 +447,10 @@ vgrad <- vectorize_logl(grad, paramnames = logllist$parameters)
 nparam <- length(logllist$parameters)
 
 results <- data.table(
-  round = rep(1:rounds, each = length(nn) * nparam), 
+  round = rep(1:rounds, each = length(nn) * nparam),
   n = rep(nn, each = nparam, times = rounds),
-  param = NA, 
-  estim = NA, 
+  param = NA,
+  estim = NA,
   truevalue = NA
 )
 
@@ -402,8 +462,8 @@ for (i in 1:rounds) {
     nvec <- create_nvec(ccm$colluderscm$simdata_obs)
     iniparam <- 0.99 * create_iniparam(ccm$colluderscm$simdata_obs, xclasses = m, yclasses = q)
     estim <- optim(iniparam, vlogl, gr = vgrad, method = "BFGS", nvec = nvec)
-    indeces <- (1 + (i - 1) * length(nn) * nparam + (j - 1) * nparam):((i - 1) * length(nn) * nparam + j * nparam)  
-    results$param[indeces] <- names(ccm$trueparameters) 
+    indeces <- (1 + (i - 1) * length(nn) * nparam + (j - 1) * nparam):((i - 1) * length(nn) * nparam + j * nparam)
+    results$param[indeces] <- names(ccm$trueparameters)
     results$estim[indeces] <- estim$par
     results$truevalue[indeces] <- ccm$trueparameters
   }
@@ -414,44 +474,48 @@ res44 <- results
 
 ```{r results}
 res22[, bias := estim - truevalue]
-res22[,  biassq := bias^2]
+res22[, biassq := bias^2]
 
 meanres22 <- res22[, .(bias = mean(bias), mse = mean(biassq), rmse = sqrt(mean(biassq))), by = .(n, param)]
 
 ry_meanres22 <- meanres22[
-  substr(param, 1, 4) == "p_ry", 
-  .(bias_mean = mean(bias),
-  bias_absmax = max(abs(bias)),
-  bias_max = max(bias),
-  bias_min = min(bias),
-  rmse_mean = mean(rmse), 
-  rmse_max = max(rmse)),
+  substr(param, 1, 4) == "p_ry",
+  .(
+    bias_mean = mean(bias),
+    bias_absmax = max(abs(bias)),
+    bias_max = max(bias),
+    bias_min = min(bias),
+    rmse_mean = mean(rmse),
+    rmse_max = max(rmse)
+  ),
   by = .(n)
 ]
 
 other_meanres22 <- meanres22[
-  substr(param, 1, 4) != "p_ry", 
-  .(bias_mean = mean(bias),
-  bias_absmax = max(abs(bias)),
-  bias_max = max(bias),
-  bias_min = min(bias),
-  rmse_mean = mean(rmse), 
-  rmse_max = max(rmse)),
+  substr(param, 1, 4) != "p_ry",
+  .(
+    bias_mean = mean(bias),
+    bias_absmax = max(abs(bias)),
+    bias_max = max(bias),
+    bias_min = min(bias),
+    rmse_mean = mean(rmse),
+    rmse_max = max(rmse)
+  ),
   by = .(n)
-] 
+]
 
 repry22 <- data.frame(
   n = formatC(ry_meanres22$n, digits = 0, format = "f"),
-  bias_min = paste0("$", formatC(ry_meanres22$bias_min, digits = 4, format = "f"), "$"),
-  bias_max = paste0("$", formatC(ry_meanres22$bias_max, digits = 4, format = "f"), "$"),
+  bias_min = paste0("$", phantom(ry_meanres22$bias_min), formatC(ry_meanres22$bias_min, digits = 4, format = "f"), "$"),
+  bias_max = paste0("$", phantom(ry_meanres22$bias_max), formatC(ry_meanres22$bias_max, digits = 4, format = "f"), "$"),
   rmse_mean = formatC(ry_meanres22$rmse_mean, digits = 4, format = "f"),
   rmse_max = formatC(ry_meanres22$rmse_max, digits = 4, format = "f")
 )
 
 repother22 <- data.frame(
   n = formatC(other_meanres22$n, digits = 0, format = "f"),
-  bias_min = paste0("$", formatC(other_meanres22$bias_min, digits = 4, format = "f"), "$"),
-  bias_max = paste0("$", formatC(other_meanres22$bias_max, digits = 4, format = "f"), "$"),
+  bias_min = paste0("$", phantom(other_meanres22$bias_min), formatC(other_meanres22$bias_min, digits = 4, format = "f"), "$"),
+  bias_max = paste0("$", phantom(other_meanres22$bias_max), formatC(other_meanres22$bias_max, digits = 4, format = "f"), "$"),
   rmse_mean = formatC(other_meanres22$rmse_mean, digits = 4, format = "f"),
   rmse_max = formatC(other_meanres22$rmse_max, digits = 4, format = "f")
 )
@@ -462,45 +526,49 @@ res44[, biassq := bias^2]
 meanres44 <- res44[, .(bias = mean(bias), mse = mean(biassq), rmse = sqrt(mean(biassq))), by = .(n, param)]
 
 ry_meanres44 <- meanres44[
-  substr(param, 1, 4) == "p_ry", 
-  .(bias_mean = mean(bias),
-  bias_absmax = max(abs(bias)),
-  bias_max = max(bias),
-  bias_min = min(bias),
-  rmse_mean = mean(rmse), 
-  rmse_max = max(rmse)),
+  substr(param, 1, 4) == "p_ry",
+  .(
+    bias_mean = mean(bias),
+    bias_absmax = max(abs(bias)),
+    bias_max = max(bias),
+    bias_min = min(bias),
+    rmse_mean = mean(rmse),
+    rmse_max = max(rmse)
+  ),
   by = .(n)
 ]
 
 other_meanres44 <- meanres44[
-  substr(param, 1, 4) != "p_ry", 
-  .(bias_mean = mean(bias),
-  bias_absmax = max(abs(bias)),
-  bias_max = max(bias),
-  bias_min = min(bias),
-  rmse_mean = mean(rmse), 
-  rmse_max = max(rmse)),
+  substr(param, 1, 4) != "p_ry",
+  .(
+    bias_mean = mean(bias),
+    bias_absmax = max(abs(bias)),
+    bias_max = max(bias),
+    bias_min = min(bias),
+    rmse_mean = mean(rmse),
+    rmse_max = max(rmse)
+  ),
   by = .(n)
-] 
+]
 
 repry44 <- data.frame(
   n = formatC(ry_meanres44$n, digits = 0, format = "f"),
-  bias_min = paste0("$", formatC(ry_meanres44$bias_min, digits = 4, format = "f"), "$"),
-  bias_max = paste0("$", formatC(ry_meanres44$bias_max, digits = 4, format = "f"), "$"),
+  bias_min = paste0("$", phantom(ry_meanres44$bias_min), formatC(ry_meanres44$bias_min, digits = 4, format = "f"), "$"),
+  bias_max = paste0("$", phantom(ry_meanres44$bias_max), formatC(ry_meanres44$bias_max, digits = 4, format = "f"), "$"),
   rmse_mean = formatC(ry_meanres44$rmse_mean, digits = 4, format = "f"),
   rmse_max = formatC(ry_meanres44$rmse_max, digits = 4, format = "f")
 )
 
 repother44 <- data.frame(
   n = formatC(other_meanres44$n, digits = 0, format = "f"),
-  bias_min = paste0("$", formatC(other_meanres44$bias_min, digits = 4, format = "f"), "$"),
-  bias_max = paste0("$", formatC(other_meanres44$bias_max, digits = 4, format = "f"), "$"),
+  bias_min = paste0("$", phantom(other_meanres44$bias_min), formatC(other_meanres44$bias_min, digits = 4, format = "f"), "$"),
+  bias_max = paste0("$", phantom(other_meanres44$bias_max), formatC(other_meanres44$bias_max, digits = 4, format = "f"), "$"),
   rmse_mean = formatC(other_meanres44$rmse_mean, digits = 4, format = "f"),
   rmse_max = formatC(other_meanres44$rmse_max, digits = 4, format = "f")
 )
 ```
 
-```{r graduates, cache=TRUE}
+```{r graduates}
 d <- read.csv2(file = "daF3185_eng.csv")
 
 # X = q4_1 How have you funded your studies? Student loan
@@ -508,16 +576,16 @@ d <- read.csv2(file = "daF3185_eng.csv")
 # 1 = Completely, 2 = Partially, 3 = Not at all
 # 1 = "Mainly" would be a better translation
 d1 <- data.table(
-  x_md = d$q4_1 - 1, 
-  y_md = d$q4_5 - 1, 
-  rx = as.numeric(is.finite(d$q4_1)), 
+  x_md = d$q4_1 - 1,
+  y_md = d$q4_5 - 1,
+  rx = as.numeric(is.finite(d$q4_1)),
   ry = as.numeric(is.finite(d$q4_5))
 )
 
 m <- 3 # number of classes for X
 q <- 3 # number of classes for Y
-logl <- create_colluder_logl(m,q)
-logllist <- create_colluder_logl(m,q, output = "list")
+logl <- create_colluder_logl(m, q)
+logllist <- create_colluder_logl(m, q, output = "list")
 grad <- create_colluder_logl_grad(logl)
 vlogl <- vectorize_logl(logl, paramnames = logllist$parameters)
 vgrad <- vectorize_grad(grad, paramnames = logllist$parameters)
@@ -541,17 +609,24 @@ lower <- adjestim - qnorm(0.975) * adjse
 upper <- adjestim + qnorm(0.975) * adjse
 
 res <- data.frame(
-  par1 = c(
-    "$p(X^{(1)}=2)$", 
+  par = c(
+    "$p(X^{(1)}=2)$",
     "$p(X^{(1)}=3)$",
     "$p(Y^{(1)}=2 | X^{(1)}=1)$",
     "$p(Y^{(1)}=3 | X^{(1)}=1)$",
     "$p(Y^{(1)}=2 | X^{(1)}=2)$",
     "$p(Y^{(1)}=3 | X^{(1)}=2)$",
     "$p(Y^{(1)}=2 | X^{(1)}=3)$",
-    "$p(Y^{(1)}=3 | X^{(1)}=3)$"
+    "$p(Y^{(1)}=3 | X^{(1)}=3)$",
+    "$p(R_X=1)$",
+    "$p(R_Y=1 | X^{(1)}=1, R_X = 0)$",
+    "$p(R_Y=1 | X^{(1)}=2, R_X = 0)$",
+    "$p(R_Y=1 | X^{(1)}=3, R_X = 0)$",
+    "$p(R_Y=1 | X^{(1)}=1, R_X = 1)$",
+    "$p(R_Y=1 | X^{(1)}=2, R_X = 1)$",
+    "$p(R_Y=1 | X^{(1)}=3, R_X = 1)$"
   ),
-  est1 = c(
+  est = c(
     estci("p_x_1"),
     estci("p_x_2"),
     estci("p_y_0_1"),
@@ -559,32 +634,19 @@ res <- data.frame(
     estci("p_y_1_1"),
     estci("p_y_1_2"),
     estci("p_y_2_1"),
-    estci("p_y_2_2")
-  ),
-  par2 = c(
-    "$p(R_X=1)$",
-    "$p(R_Y=1 | X^{(1)}=1, R_X = 0)$",
-    "$p(R_Y=1 | X^{(1)}=2, R_X = 0)$",
-    "$p(R_Y=1 | X^{(1)}=3, R_X = 0)$",
-    "$p(R_Y=1 | X^{(1)}=1, R_X = 1)$",
-    "$p(R_Y=1 | X^{(1)}=2, R_X = 1)$",
-    "$p(R_Y=1 | X^{(1)}=3, R_X = 1)$",
-    ""
-  ),
-  est2 = c(
+    estci("p_y_2_2"),
     estci("p_rx"),
     form(estim$par["p_ry_0_0"]),
     form(estim$par["p_ry_1_0"]),
     form(estim$par["p_ry_2_0"]),
     estci("p_ry_0_1"),
     estci("p_ry_1_1"),
-    estci("p_ry_2_1"),
-    ""
+    estci("p_ry_2_1")
   )
 )
 ```
 
-# 6 Simulation Study {-}
+# Simulation Study {-}
 
 **Scenario** $m = 2, q = 2$
 ```{r output22}
@@ -636,8 +698,11 @@ knitr::kable(
   kableExtra::kable_styling(table.envir = "center")
 ```
 
-# 7 Application {-}
+\newpage
 
+# Application {-}
+
+- The dataset contains `r nrow(d)` observations.
 - Percentage of missing answers for the student loan question: `r round(mean(is.na(d$q4_1)), 2) * 100`%
 - Percentage of missing answers for the funding through work question: `r round(mean(is.na(d$q4_5)), 2) * 100`%
 
@@ -648,9 +713,17 @@ knitr::kable(
   centering = FALSE,
   booktabs = TRUE,
   escape = FALSE,
-  align = "llll",
+  align = "ll",
   linesep = "",
-  col.names = c("Parameter", "Estimate (95\\% CI)", "Parameter", "Est. (95\\% CI)")
-)|>
+  col.names = c("Parameter", "Estimate (95\\% CI)")
+) |>
   kableExtra::kable_styling(table.envir = "center")
+```
+
+\newpage
+
+# Session Info {-}
+
+```{r session, results='asis'}
+toLatex(sessionInfo())
 ```

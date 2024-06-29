@@ -1,5 +1,6 @@
 .Rproj.user
 *.Rproj
+.Rhistory
 daF3185_eng.csv
 replication.tex
 replication.pdf
