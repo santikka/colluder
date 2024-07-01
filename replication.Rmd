@@ -1,5 +1,5 @@
 ---
-title: 'Full Law Identification under Missing Data in the Categorical Colluder Model: Replication Materials'
+title: 'Full Law Identification under Missing Data with Categorical Variables: Replication Materials'
 output: 
   pdf_document:
     extra_dependencies: "booktabs"

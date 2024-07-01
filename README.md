@@ -1,4 +1,4 @@
-# Full Law Identification under Missing Data in the Categorical Colluder Model: Replication Materials
+# Full Law Identification under Missing Data with Categorical Variables: Replication Materials
 
 The Finnish Bachelor's Graduate Survey 2016 data is available at: <https://urn.fi/urn:nbn:fi:fsd:T-FSD3185>
 
